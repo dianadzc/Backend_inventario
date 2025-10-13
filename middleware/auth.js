@@ -45,7 +45,7 @@ const generateToken = (user) => {
             department: user.department
         },
         JWT_SECRET,
-        { expiresIn: '8h' }
+        { expiresIn: '24h' }
     );
 };
 
