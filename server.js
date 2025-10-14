@@ -13,6 +13,7 @@ const maintenanceRoutes = require('./routes/maintenance');
 const responsiveFormsRoutes = require('./routes/responsiveForm');
 const reportsRoutes = require('./routes/reports');
 const requisitionsRoutes = require('./routes/requisitions');
+const clientsRoutes = require('./routes/clients');
 
 
 const app = express();
@@ -40,6 +41,7 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/responsive-forms', responsiveFormsRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/requisitions', requisitionsRoutes);
+app.use('/api/clients', clientsRoutes);
 
 // Ruta principal
 app.get('/', (req, res) => {
