@@ -33,6 +33,9 @@ app.use((req, res, next) => {
     next();
 });
 
+//Servir archivos estáticos (imagen de logo)
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Rutas API
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);

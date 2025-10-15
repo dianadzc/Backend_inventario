@@ -159,6 +159,53 @@ router.post('/', authenticateToken, [
     }
 });
 
+// Editar requisición
+router.put('/:id', authenticateToken, [
+    body('amount').optional().isNumeric().withMessage('Monto debe ser numérico'),
+    body('payable_to').optional().notEmpty().withMessage('A favor de es requerido'),
+    body('concept').optional().notEmpty().withMessage('Concepto es requerido')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const requisition = await Requisition.findById(req.params.id);
+
+        if (!requisition) {
+            return res.status(404).json({ message: 'Requisición no encontrada' });
+        }
+
+        // Solo permitir editar si está pendiente
+        if (requisition.status !== 'pending') {
+            return res.status(400).json({ 
+                message: 'Solo se pueden editar requisiciones pendientes' 
+            });
+        }
+
+        // Actualizar campos
+        if (req.body.request_type) requisition.request_type = req.body.request_type;
+        if (req.body.amount) requisition.amount = req.body.amount;
+        if (req.body.currency) requisition.currency = req.body.currency;
+        if (req.body.payable_to) requisition.payable_to = req.body.payable_to;
+        if (req.body.concept) requisition.concept = req.body.concept;
+
+        await requisition.save();
+
+        const populatedRequisition = await Requisition.findById(requisition._id)
+            .populate('requested_by', 'username full_name email');
+
+        res.json({
+            message: 'Requisición actualizada exitosamente',
+            requisition: populatedRequisition
+        });
+    } catch (error) {
+        console.error('Error al actualizar requisición:', error);
+        res.status(500).json({ message: 'Error al actualizar requisición' });
+    }
+});
+
 // Aprobar/Rechazar requisición
 router.put('/:id/approve', authenticateToken, [
     body('approved').isBoolean().withMessage('Estado de aprobación requerido')
@@ -193,6 +240,53 @@ router.put('/:id/approve', authenticateToken, [
     } catch (error) {
         console.error('Error al aprobar requisición:', error);
         res.status(500).json({ message: 'Error al aprobar requisición' });
+    }
+});
+
+// Editar requisición
+router.put('/:id', authenticateToken, [
+    body('amount').optional().isNumeric().withMessage('Monto debe ser numérico'),
+    body('payable_to').optional().notEmpty().withMessage('A favor de es requerido'),
+    body('concept').optional().notEmpty().withMessage('Concepto es requerido')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const requisition = await Requisition.findById(req.params.id);
+
+        if (!requisition) {
+            return res.status(404).json({ message: 'Requisición no encontrada' });
+        }
+
+        // Solo permitir editar si está pendiente
+        if (requisition.status !== 'pending') {
+            return res.status(400).json({ 
+                message: 'Solo se pueden editar requisiciones pendientes' 
+            });
+        }
+
+        // Actualizar campos
+        if (req.body.request_type) requisition.request_type = req.body.request_type;
+        if (req.body.amount) requisition.amount = req.body.amount;
+        if (req.body.currency) requisition.currency = req.body.currency;
+        if (req.body.payable_to) requisition.payable_to = req.body.payable_to;
+        if (req.body.concept) requisition.concept = req.body.concept;
+
+        await requisition.save();
+
+        const populatedRequisition = await Requisition.findById(requisition._id)
+            .populate('requested_by', 'username full_name email');
+
+        res.json({
+            message: 'Requisición actualizada exitosamente',
+            requisition: populatedRequisition
+        });
+    } catch (error) {
+        console.error('Error al actualizar requisición:', error);
+        res.status(500).json({ message: 'Error al actualizar requisición' });
     }
 });
 
