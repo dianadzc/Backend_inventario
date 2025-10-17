@@ -123,7 +123,8 @@ router.post('/', authenticateToken, [
     body('amount').isNumeric().withMessage('Monto debe ser un número'),
     body('currency').isIn(['MXN', 'USD']).withMessage('Moneda inválida'),
     body('payable_to').notEmpty().withMessage('A favor de es requerido'),
-    body('concept').notEmpty().withMessage('Concepto es requerido')
+    body('concept').notEmpty().withMessage('Concepto es requerido'),
+    body('request_date').optional().isISO8601().toDate()
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -142,6 +143,7 @@ router.post('/', authenticateToken, [
             amount_in_words,
             payable_to: req.body.payable_to,
             concept: req.body.concept,
+            request_date: req.body.request_date || new Date(),
             department: 'SISTEMAS',
             requested_by: req.user.id,
             status: 'pending'
@@ -163,7 +165,8 @@ router.post('/', authenticateToken, [
 router.put('/:id', authenticateToken, [
     body('amount').optional().isNumeric().withMessage('Monto debe ser numérico'),
     body('payable_to').optional().notEmpty().withMessage('A favor de es requerido'),
-    body('concept').optional().notEmpty().withMessage('Concepto es requerido')
+    body('concept').optional().notEmpty().withMessage('Concepto es requerido'),
+    body('request_date').optional().isISO8601().toDate()
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -247,7 +250,8 @@ router.put('/:id/approve', authenticateToken, [
 router.put('/:id', authenticateToken, [
     body('amount').optional().isNumeric().withMessage('Monto debe ser numérico'),
     body('payable_to').optional().notEmpty().withMessage('A favor de es requerido'),
-    body('concept').optional().notEmpty().withMessage('Concepto es requerido')
+    body('concept').optional().notEmpty().withMessage('Concepto es requerido'),
+    body('request_date').optional().isISO8601().toDate()
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -353,4 +357,24 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
     }
 });
 
+// Eliminar requisición
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const requisition = await Requisition.findById(req.params.id);
+
+        if (!requisition) {
+            return res.status(404).json({ message: 'Requisición no encontrada' });
+        }
+
+        await Requisition.findByIdAndDelete(req.params.id);
+
+        res.json({ 
+            message: 'Requisición eliminada exitosamente',
+            id: req.params.id 
+        });
+    } catch (error) {
+        console.error('Error al eliminar requisición:', error);
+        res.status(500).json({ message: 'Error al eliminar requisición' });
+    }
+});
 module.exports = router;

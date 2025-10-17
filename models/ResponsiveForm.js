@@ -1,4 +1,3 @@
-// models/ResponsiveForm.js
 const mongoose = require('mongoose');
 
 const responsiveFormSchema = new mongoose.Schema({
@@ -7,51 +6,50 @@ const responsiveFormSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  asset_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Asset',
+  equipment_type: {
+    type: String,
     required: true
   },
-  previous_responsible_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+  brand: {
+    type: String,
+    required: true
   },
-  new_responsible_id: {
+  serial_number: {
+    type: String,
+    required: true
+  },
+  acquisition_cost: {
+    type: Number,
+    required: true
+  },
+  delivery_date: {
+    type: Date,
+    default: Date.now
+  },
+  employee_name: {
+    type: String,
+    required: true
+  },
+  employee_position: {
+    type: String,
+    required: true
+  },
+  department: {
+    type: String,
+    default: 'sistemas'
+  },
+  created_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  transfer_date: {
-    type: Date,
-    required: true
-  },
-  reason: {
-    type: String,
-    default: ''
-  },
-  conditions: {
-    type: String,
-    default: ''
-  },
-  observations: {
-    type: String,
-    default: ''
-  },
-  approved_by: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+    enum: ['active', 'returned', 'damaged'],
+    default: 'active'
   }
 }, {
   timestamps: true
 });
-
-// Índices
-responsiveFormSchema.index({ form_code: 1 });
-responsiveFormSchema.index({ status: 1 });
 
 module.exports = mongoose.model('ResponsiveForm', responsiveFormSchema);
