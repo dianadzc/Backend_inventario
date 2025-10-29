@@ -24,10 +24,6 @@ const assetSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  model: {
-    type: String,
-    default: ''
-  },
   serial_number: {
     type: String,
     default: ''
