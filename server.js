@@ -15,15 +15,49 @@ const reportsRoutes = require('./routes/reports');
 const requisitionsRoutes = require('./routes/requisitions');
 const clientsRoutes = require('./routes/clients');
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Conectar a MongoDB
 connectDB();
 
+// ⭐ CONFIGURACIÓN CORS COMPLETA
+const corsOptions = {
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:3000',
+            'http://127.0.0.1:5173'
+        ];
+        
+        // Permitir requests sin origin (como Postman o mismo servidor)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With',
+        'Accept',
+        'Origin'
+    ],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    optionsSuccessStatus: 200,
+    maxAge: 86400 // 24 horas
+};
+
+app.use(cors(corsOptions));
+
+// Manejar preflight requests explícitamente
+app.options('*', cors(corsOptions));
+
 // Middlewares
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
