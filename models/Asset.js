@@ -16,6 +16,10 @@ const assetSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  type: {  // ⭐ AGREGAR ESTE CAMPO
+    type: String,
+    default: 'Otro'
+  },
   category_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'AssetCategory'
