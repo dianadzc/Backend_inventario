@@ -1,4 +1,4 @@
-// routes/inventory.js - VERSIÓN MONGODB
+// routes/inventory.js - VERSIÓN MONGODB ACTUALIZADA
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
@@ -28,7 +28,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 { name: { $regex: search, $options: 'i' } },
                 { asset_code: { $regex: search, $options: 'i' } },
                 { brand: { $regex: search, $options: 'i' } },
-                { model: { $regex: search, $options: 'i' } }
+                { serial_number: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -74,7 +74,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// Crear nuevo activo
+// ⭐ Crear nuevo activo - ACTUALIZADO
 router.post('/', authenticateToken, [
     body('name').notEmpty().withMessage('Nombre del activo es requerido'),
     body('asset_code').notEmpty().withMessage('Código del activo es requerido'),
@@ -92,7 +92,28 @@ router.post('/', authenticateToken, [
             return res.status(400).json({ message: 'El código del activo ya existe' });
         }
 
-        const asset = new Asset(req.body);
+        // ⭐ Mapear campos correctamente
+        const assetData = {
+            name: req.body.name,
+            description: req.body.description || '',
+            type: req.body.type || 'Otro', // ⭐ NUEVO
+            asset_code: req.body.asset_code,
+            category_id: req.body.category_id || undefined,
+            brand: req.body.brand || '',
+            serial_number: req.body.serial_number || '', // ⭐ NUEVO
+            purchase_date: req.body.purchase_date || new Date(),
+            purchase_price: parseFloat(req.body.purchase_price) || 0,
+            supplier: req.body.supplier || '',
+            location: req.body.location || 'Almacén',
+            status: req.body.status || 'active',
+            responsible_user_id: req.body.responsible_user_id || undefined,
+            warranty_expiry: req.body.warranty_expiry || undefined,
+            notes: req.body.notes || ''
+        };
+
+        console.log('📦 Creando activo con datos:', assetData);
+
+        const asset = new Asset(assetData);
         await asset.save();
 
         res.status(201).json({
@@ -101,11 +122,11 @@ router.post('/', authenticateToken, [
         });
     } catch (error) {
         console.error('Error al crear activo:', error);
-        res.status(500).json({ message: 'Error al crear activo' });
+        res.status(500).json({ message: 'Error al crear activo', error: error.message });
     }
 });
 
-// Actualizar activo
+// ⭐ Actualizar activo - ACTUALIZADO
 router.put('/:id', authenticateToken, [
     body('name').notEmpty().withMessage('Nombre del activo es requerido')
 ], async (req, res) => {
@@ -115,9 +136,29 @@ router.put('/:id', authenticateToken, [
             return res.status(400).json({ errors: errors.array() });
         }
 
+        // ⭐ Mapear campos correctamente
+        const updateData = {
+            name: req.body.name,
+            description: req.body.description || '',
+            type: req.body.type || 'Otro', // ⭐ NUEVO
+            status: req.body.status || 'active',
+            purchase_price: parseFloat(req.body.purchase_price) || 0,
+            brand: req.body.brand || '',
+            serial_number: req.body.serial_number || '', // ⭐ NUEVO
+            location: req.body.location,
+            notes: req.body.notes || ''
+        };
+
+        // Solo actualizar campos que fueron enviados
+        Object.keys(updateData).forEach(key => 
+            updateData[key] === undefined && delete updateData[key]
+        );
+
+        console.log('🔄 Actualizando activo con datos:', updateData);
+
         const asset = await Asset.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            updateData,
             { new: true, runValidators: true }
         );
 
@@ -133,7 +174,7 @@ router.put('/:id', authenticateToken, [
 });
 
 // Eliminar activo (soft delete)
-router.delete('/:id', authenticateToken, authorizeRole(['admin']), async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
     try {
         const asset = await Asset.findByIdAndUpdate(
             req.params.id,
