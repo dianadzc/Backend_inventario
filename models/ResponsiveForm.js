@@ -1,4 +1,4 @@
-// models/ResponsiveForm.js
+// Backend/models/ResponsiveForm.js
 const mongoose = require('mongoose');
 
 const responsiveFormSchema = new mongoose.Schema({
@@ -6,6 +6,11 @@ const responsiveFormSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true
+  },
+  asset_id: {  // ⭐ AGREGAR ESTO
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Asset',
+    default: null
   },
   equipment_type: {
     type: String,

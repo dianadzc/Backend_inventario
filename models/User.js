@@ -1,4 +1,4 @@
-// models/User.js
+// Backend/models/User.js - EMAIL OPCIONAL
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -11,8 +11,8 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true, // ⭐ Permite múltiples valores null/undefined
     trim: true,
     lowercase: true
   },
@@ -39,10 +39,9 @@ const userSchema = new mongoose.Schema({
     default: true
   }
 }, {
-  timestamps: true // Crea automáticamente createdAt y updatedAt
+  timestamps: true
 });
 
-// Índices para mejorar búsquedas
 userSchema.index({ username: 1 });
 userSchema.index({ email: 1 });
 

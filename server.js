@@ -80,6 +80,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/requisitions', requisitionsRoutes);
 app.use('/api/clients', clientsRoutes);
 
+
 // Ruta principal
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));

@@ -59,10 +59,10 @@ router.post('/login', [
 
 // Registro de usuarios (solo admin)
 router.post('/register', authenticateToken, [
-    body('username').isLength({ min: 3 }).withMessage('Usuario debe tener al menos 3 caracteres'),
-    body('email').isEmail().withMessage('Email inválido'),
-    body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres'),
-    body('full_name').notEmpty().withMessage('Nombre completo es requerido')
+  body('username').isLength({ min: 3 }).withMessage('Usuario debe tener al menos 3 caracteres'),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'), // ⭐ OPCIONAL
+  body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres'),
+  body('full_name').notEmpty().withMessage('Nombre completo es requerido')
 ], async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
@@ -136,51 +136,64 @@ router.get('/users', authenticateToken, async (req, res) => {
 });
 
 // Actualizar usuario (solo admin)
+// Actualizar usuario (solo admin) - LÍNEA ~100
 router.put('/users/:id', authenticateToken, [
-    body('email').optional().isEmail().withMessage('Email inválido'),
-    body('full_name').optional().notEmpty().withMessage('Nombre completo es requerido')
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'),
+  body('full_name').optional().notEmpty().withMessage('Nombre completo es requerido')
 ], async (req, res) => {
-    try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Solo administradores pueden actualizar usuarios' });
-        }
+  try {
+    console.log('🔐 Usuario haciendo la petición:', req.user); // Debug
 
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        const { email, full_name, role, department, active, password } = req.body;
-
-        const updateData = {
-            email,
-            full_name,
-            role,
-            department,
-            active
-        };
-
-        // Si se proporciona nueva contraseña
-        if (password) {
-            updateData.password = await bcrypt.hash(password, 10);
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true, runValidators: true }
-        ).select('-password');
-
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-
-        res.json({ message: 'Usuario actualizado exitosamente', user: updatedUser });
-    } catch (error) {
-        console.error('Error al actualizar usuario:', error);
-        res.status(500).json({ message: 'Error del servidor' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Solo administradores pueden actualizar usuarios' });
     }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const { email, full_name, role, department, active, password } = req.body;
+
+    const updateData = {};
+    
+    // Solo actualizar campos que se envíen
+    if (email !== undefined) updateData.email = email || null;
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (role !== undefined) updateData.role = role;
+    if (department !== undefined) updateData.department = department;
+    if (active !== undefined) updateData.active = active;
+
+    // Si se proporciona nueva contraseña
+    if (password && password.trim() !== '') {
+      const bcrypt = require('bcryptjs');
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    console.log('📝 Actualizando usuario:', id, updateData);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.json({ 
+      message: 'Usuario actualizado exitosamente', 
+      user: updatedUser 
+    });
+  } catch (error) {
+    console.error('❌ Error al actualizar usuario:', error);
+    res.status(500).json({ 
+      message: 'Error del servidor',
+      error: error.message 
+    });
+  }
 });
 
 // Obtener perfil del usuario
@@ -231,6 +244,42 @@ router.put('/change-password', authenticateToken, [
         res.json({ message: 'Contraseña actualizada exitosamente' });
     } catch (error) {
         console.error('Error al cambiar contraseña:', error);
+        res.status(500).json({ message: 'Error del servidor' });
+    }
+
+
+});
+
+// ⭐ ELIMINAR USUARIO (solo admin)
+router.delete('/users/:id', authenticateToken, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Solo administradores pueden eliminar usuarios' });
+        }
+
+        const { id } = req.params;
+
+        // ⭐ Evitar que el admin se elimine a sí mismo
+        if (id === req.user.id || id === req.user._id?.toString()) {
+            return res.status(400).json({ message: 'No puedes eliminar tu propio usuario' });
+        }
+
+        const user = await User.findByIdAndDelete(id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.json({
+            message: 'Usuario eliminado exitosamente',
+            deletedUser: {
+                id: user._id,
+                username: user.username,
+                full_name: user.full_name
+            }
+        });
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
         res.status(500).json({ message: 'Error del servidor' });
     }
 });

@@ -51,7 +51,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Crear nueva responsiva
+// Backend/routes/responsiveForm.js - CREAR RESPONSIVA
 router.post('/', authenticateToken, [
   body('equipment_type').notEmpty().withMessage('Tipo de equipo es requerido'),
   body('brand').notEmpty().withMessage('Marca es requerida'),
@@ -64,7 +64,11 @@ router.post('/', authenticateToken, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      console.error('❌ Errores de validación:', errors.array());
+      return res.status(400).json({ 
+        message: 'Error de validación',
+        errors: errors.array() 
+      });
     }
 
     // Generar código único
@@ -80,10 +84,11 @@ router.post('/', authenticateToken, [
 
     const form = new ResponsiveForm({
       form_code,
+      asset_id: req.body.asset_id || null, // ⭐ AGREGAR ESTO
       equipment_type: req.body.equipment_type,
       brand: req.body.brand,
       serial_number: req.body.serial_number,
-      acquisition_cost: req.body.acquisition_cost,
+      acquisition_cost: parseFloat(req.body.acquisition_cost), // ⭐ CONVERTIR A NÚMERO
       delivery_date: req.body.delivery_date || new Date(),
       employee_name: req.body.employee_name,
       employee_position: req.body.employee_position,
@@ -92,21 +97,25 @@ router.post('/', authenticateToken, [
       status: 'active'
     });
 
+    console.log('📤 Creando responsiva:', form);
     await form.save();
 
     const populatedForm = await ResponsiveForm.findById(form._id)
-      .populate('created_by', 'username full_name email');
+      .populate('created_by', 'username full_name email')
+      .populate('asset_id'); // ⭐ POPULAR ASSET
 
     res.status(201).json({
       message: 'Responsiva creada exitosamente',
       form: populatedForm
     });
   } catch (error) {
-    console.error('Error al crear responsiva:', error);
-    res.status(500).json({ message: 'Error al crear responsiva' });
+    console.error('❌ Error al crear responsiva:', error);
+    res.status(500).json({ 
+      message: 'Error al crear responsiva',
+      error: error.message 
+    });
   }
 });
-
 // Actualizar responsiva
 router.put('/:id', authenticateToken, [
   body('equipment_type').optional().notEmpty(),

@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
 const Asset = require('../models/Asset');
 const AssetCategory = require('../models/AssetCategory');
+const TypeCatalog = require('../models/TypeCatalog');
 
 const router = express.Router();
 
@@ -267,6 +268,94 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
         console.error('Error al obtener estadísticas:', error);
         res.status(500).json({ message: 'Error al obtener estadísticas' });
     }
+});
+
+// Backend/routes/inventory.js - AGREGAR AL FINAL (antes de module.exports)
+
+const AssetCatalog = require('../models/AssetCatalog');
+
+// ========== CATÁLOGO DE ACTIVOS ==========
+
+// Obtener todos los nombres de activos del catálogo
+router.get('/catalog/asset-names', authenticateToken, async (req, res) => {
+  try {
+    const assetNames = await AssetCatalog.find().sort({ name: 1 });
+    res.json(assetNames);
+  } catch (error) {
+    console.error('Error al obtener catálogo de activos:', error);
+    res.status(500).json({ message: 'Error al obtener catálogo de activos' });
+  }
+});
+
+// Crear nuevo nombre de activo en el catálogo
+router.post('/catalog/asset-names', authenticateToken, [
+  body('name').notEmpty().withMessage('Nombre del activo es requerido')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const assetName = new AssetCatalog({
+      name: req.body.name.trim(),
+      description: req.body.description || ''
+    });
+
+    await assetName.save();
+
+    res.status(201).json({
+      message: 'Nombre de activo agregado al catálogo',
+      assetName
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Este nombre de activo ya existe' });
+    }
+    console.error('Error al crear nombre de activo:', error);
+    res.status(500).json({ message: 'Error al crear nombre de activo' });
+  }
+});
+
+// Obtener todos los tipos del catálogo
+router.get('/catalog/types', authenticateToken, async (req, res) => {
+  try {
+    const types = await TypeCatalog.find().sort({ name: 1 });
+    res.json(types);
+  } catch (error) {
+    console.error('Error al obtener catálogo de tipos:', error);
+    res.status(500).json({ message: 'Error al obtener catálogo de tipos' });
+  }
+});
+
+// Crear nuevo tipo en el catálogo
+router.post('/catalog/types', authenticateToken, [
+  body('name').notEmpty().withMessage('Nombre del tipo es requerido')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const type = new TypeCatalog({
+      name: req.body.name.trim(),
+      description: req.body.description || ''
+    });
+
+    await type.save();
+
+    res.status(201).json({
+      message: 'Tipo agregado al catálogo',
+      type
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Este tipo ya existe' });
+    }
+    console.error('Error al crear tipo:', error);
+    res.status(500).json({ message: 'Error al crear tipo' });
+  }
 });
 
 module.exports = router;
