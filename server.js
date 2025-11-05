@@ -14,6 +14,7 @@ const responsiveFormsRoutes = require('./routes/responsiveForm');
 const reportsRoutes = require('./routes/reports');
 const requisitionsRoutes = require('./routes/requisitions');
 const clientsRoutes = require('./routes/clients');
+const { generalLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +52,8 @@ const corsOptions = {
     optionsSuccessStatus: 200,
     maxAge: 86400 // 24 horas
 };
+
+app.use(generalLimiter);
 
 app.use(cors(corsOptions));
 

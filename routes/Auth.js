@@ -4,11 +4,16 @@ const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, generateToken } = require('../middleware/auth');
 const User = require('../models/User');
+//const { loginLimiter } = require('../middleware/rateLimiter');
+const { logAction } = require('../middleware/auditLogger');
+const { validatePassword } = require('../utils/passwordValidator');
+
+
 
 const router = express.Router();
 
 // Login
-router.post('/login', [
+router.post('/login', /*loginLimiter,*/ [
     body('username').notEmpty().withMessage('Usuario es requerido'),
     body('password').notEmpty().withMessage('Contraseña es requerida')
 ], async (req, res) => {
@@ -27,18 +32,44 @@ router.post('/login', [
         });
 
         if (!user) {
+            // ⭐ Log de intento fallido
+            await logAction(
+                { ip: req.ip, get: req.get.bind(req) },
+                'login',
+                'auth',
+                `Intento fallido de login para usuario: ${username}`,
+                'failed'
+            );
             return res.status(401).json({ message: 'Credenciales inválidas' });
         }
 
         // Verificar contraseña
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) {
+            // ⭐ Log de intento fallido
+            await logAction(
+                { user: { id: user._id, username: user.username }, ip: req.ip, get: req.get.bind(req) },
+                'login',
+                'auth',
+                `Contraseña incorrecta para usuario: ${username}`,
+                'failed'
+            );
             return res.status(401).json({ message: 'Credenciales inválidas' });
         }
 
         // Generar token
         const token = generateToken(user);
 
+        // ⭐ Log de login exitoso
+        await logAction(
+            { user: { id: user._id, username: user.username }, ip: req.ip, get: req.get.bind(req) },
+            'login',
+            'auth',
+            `Usuario ${user.username} inició sesión`,
+            'success'
+        );
+
+        // ⭐⭐⭐ ESTO FALTABA - ENVIAR RESPUESTA AL FRONTEND ⭐⭐⭐
         res.json({
             message: 'Login exitoso',
             token,
@@ -51,6 +82,7 @@ router.post('/login', [
                 department: user.department
             }
         });
+
     } catch (error) {
         console.error('Error en login:', error);
         res.status(500).json({ message: 'Error del servidor' });
@@ -59,10 +91,10 @@ router.post('/login', [
 
 // Registro de usuarios (solo admin)
 router.post('/register', authenticateToken, [
-  body('username').isLength({ min: 3 }).withMessage('Usuario debe tener al menos 3 caracteres'),
-  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'), // ⭐ OPCIONAL
-  body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres'),
-  body('full_name').notEmpty().withMessage('Nombre completo es requerido')
+    body('username').isLength({ min: 3 }).withMessage('Usuario debe tener al menos 3 caracteres'),
+    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'), // ⭐ OPCIONAL
+    body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres'),
+    body('full_name').notEmpty().withMessage('Nombre completo es requerido')
 ], async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
@@ -136,64 +168,63 @@ router.get('/users', authenticateToken, async (req, res) => {
 });
 
 // Actualizar usuario (solo admin)
-// Actualizar usuario (solo admin) - LÍNEA ~100
 router.put('/users/:id', authenticateToken, [
-  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'),
-  body('full_name').optional().notEmpty().withMessage('Nombre completo es requerido')
+    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'),
+    body('full_name').optional().notEmpty().withMessage('Nombre completo es requerido')
 ], async (req, res) => {
-  try {
-    console.log('🔐 Usuario haciendo la petición:', req.user); // Debug
+    try {
+        console.log('🔐 Usuario haciendo la petición:', req.user); // Debug
 
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Solo administradores pueden actualizar usuarios' });
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Solo administradores pueden actualizar usuarios' });
+        }
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { id } = req.params;
+        const { email, full_name, role, department, active, password } = req.body;
+
+        const updateData = {};
+
+        // Solo actualizar campos que se envíen
+        if (email !== undefined) updateData.email = email || null;
+        if (full_name !== undefined) updateData.full_name = full_name;
+        if (role !== undefined) updateData.role = role;
+        if (department !== undefined) updateData.department = department;
+        if (active !== undefined) updateData.active = active;
+
+        // Si se proporciona nueva contraseña
+        if (password && password.trim() !== '') {
+            const bcrypt = require('bcryptjs');
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        console.log('📝 Actualizando usuario:', id, updateData);
+
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.json({
+            message: 'Usuario actualizado exitosamente',
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('❌ Error al actualizar usuario:', error);
+        res.status(500).json({
+            message: 'Error del servidor',
+            error: error.message
+        });
     }
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { id } = req.params;
-    const { email, full_name, role, department, active, password } = req.body;
-
-    const updateData = {};
-    
-    // Solo actualizar campos que se envíen
-    if (email !== undefined) updateData.email = email || null;
-    if (full_name !== undefined) updateData.full_name = full_name;
-    if (role !== undefined) updateData.role = role;
-    if (department !== undefined) updateData.department = department;
-    if (active !== undefined) updateData.active = active;
-
-    // Si se proporciona nueva contraseña
-    if (password && password.trim() !== '') {
-      const bcrypt = require('bcryptjs');
-      updateData.password = await bcrypt.hash(password, 10);
-    }
-
-    console.log('📝 Actualizando usuario:', id, updateData);
-
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.json({ 
-      message: 'Usuario actualizado exitosamente', 
-      user: updatedUser 
-    });
-  } catch (error) {
-    console.error('❌ Error al actualizar usuario:', error);
-    res.status(500).json({ 
-      message: 'Error del servidor',
-      error: error.message 
-    });
-  }
 });
 
 // Obtener perfil del usuario

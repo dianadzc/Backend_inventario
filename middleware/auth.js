@@ -45,9 +45,11 @@ const generateToken = (user) => {
             department: user.department
         },
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: '10h' }
     );
 };
+
+
 
 module.exports = {
     authenticateToken,
