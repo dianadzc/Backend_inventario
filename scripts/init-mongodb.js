@@ -8,22 +8,22 @@ const AssetCategory = require('../models/AssetCategory');
 const connectDB = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/siaf_hotel');
-        console.log('✅ Conectado a MongoDB');
+        console.log(' Conectado a MongoDB');
     } catch (error) {
-        console.error('❌ Error al conectar:', error);
+        console.error(' Error al conectar:', error);
         process.exit(1);
     }
 };
 
 const initDatabase = async () => {
     try {
-        console.log('\n🚀 Iniciando base de datos MongoDB...\n');
+        console.log('\n Iniciando base de datos MongoDB...\n');
 
         // Limpiar datos existentes (solo en desarrollo)
         if (process.env.NODE_ENV === 'development') {
             await User.deleteMany({});
             await AssetCategory.deleteMany({});
-            console.log('🧹 Base de datos limpiada');
+            console.log(' Base de datos limpiada');
         }
 
         // Crear usuario administrador
@@ -37,7 +37,7 @@ const initDatabase = async () => {
             department: 'Sistemas'
         });
         await admin.save();
-        console.log('✅ Usuario admin creado');
+        console.log(' Usuario admin creado');
 
         // Crear categorías de activos
         const categories = [
@@ -55,22 +55,22 @@ const initDatabase = async () => {
             const category = new AssetCategory(cat);
             await category.save();
         }
-        console.log('✅ Categorías creadas');
+        console.log('Categorías creadas');
 
         console.log('\n' + '='.repeat(60));
-        console.log('✅ Base de datos MongoDB inicializada correctamente');
+        console.log('Base de datos MongoDB inicializada correctamente');
         console.log('='.repeat(60));
-        console.log('\n📝 Credenciales por defecto:');
+        console.log('\n Credenciales por defecto:');
         console.log('   Usuario: admin');
         console.log('   Contraseña: admin123');
-        console.log('\n🌐 Servidor: http://localhost:5000');
+        console.log('\n Servidor: http://localhost:5000');
         console.log('='.repeat(60) + '\n');
 
     } catch (error) {
-        console.error('❌ Error al inicializar base de datos:', error);
+        console.error(' Error al inicializar base de datos:', error);
     } finally {
         await mongoose.connection.close();
-        console.log('👋 Conexión cerrada\n');
+        console.log(' Conexión cerrada\n');
         process.exit(0);
     }
 };

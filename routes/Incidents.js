@@ -55,7 +55,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Obtener una incidencia específica
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id',authenticateToken, async (req, res) => {
     try {
         const incident = await Incident.findById(req.params.id)
             .populate('asset_id', 'name asset_code')
@@ -93,7 +93,7 @@ router.post('/', authenticateToken, [
             description: req.body.description,
             asset_id: req.body.asset_id,
             priority: req.body.priority || 'medium',
-            reported_by: req.user.id,
+            reported_by: req.body.reported_by,
             assigned_to: req.body.assigned_to,
             status: 'open'
         });
@@ -111,7 +111,7 @@ router.post('/', authenticateToken, [
 });
 
 // Actualizar incidencia
-router.put('/:id', authenticateToken, [
+router.put('/:id',authenticateToken, [
     body('title').notEmpty().withMessage('Título es requerido'),
     body('description').notEmpty().withMessage('Descripción es requerida')
 ], async (req, res) => {
@@ -153,7 +153,7 @@ router.put('/:id', authenticateToken, [
 });
 
 // Asignar incidencia
-router.put('/:id/assign', authenticateToken, [
+router.put('/:id/assign',authenticateToken, [
     body('assigned_to').notEmpty().withMessage('Usuario asignado requerido')
 ], async (req, res) => {
     try {
@@ -183,7 +183,7 @@ router.put('/:id/assign', authenticateToken, [
 });
 
 // Resolver incidencia
-router.put('/:id/resolve', authenticateToken, [
+router.put('/:id/resolve',authenticateToken, [
     body('solution').notEmpty().withMessage('Solución es requerida')
 ], async (req, res) => {
     try {

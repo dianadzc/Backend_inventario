@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 5000;
 // Conectar a MongoDB
 connectDB();
 
-// ⭐ CONFIGURACIÓN CORS COMPLETA
+//  CONFIGURACIÓN CORS COMPLETA
 const corsOptions = {
     origin: function (origin, callback) {
         const allowedOrigins = [
@@ -102,9 +102,9 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`🚀 Servidor SIAF ejecutándose en http://localhost:${PORT}`);
-    console.log(`📊 ${process.env.APP_NAME}`);
-    console.log(`🏨 ${process.env.COMPANY_NAME}`);
-    console.log(`📍 ${process.env.COMPANY_ADDRESS}`);
+    console.log(`Servidor SIAF ejecutándose en http://localhost:${PORT}`);
+    console.log(` ${process.env.APP_NAME}`);
+    console.log(` ${process.env.COMPANY_NAME}`);
+    console.log(` ${process.env.COMPANY_ADDRESS}`);
     console.log(`${'='.repeat(60)}\n`);
 });

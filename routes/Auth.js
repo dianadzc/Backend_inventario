@@ -60,7 +60,7 @@ router.post('/login', /*loginLimiter,*/ [
         // Generar token
         const token = generateToken(user);
 
-        // ⭐ Log de login exitoso
+        //  Log de login exitoso
         await logAction(
             { user: { id: user._id, username: user.username }, ip: req.ip, get: req.get.bind(req) },
             'login',
@@ -69,7 +69,7 @@ router.post('/login', /*loginLimiter,*/ [
             'success'
         );
 
-        // ⭐⭐⭐ ESTO FALTABA - ENVIAR RESPUESTA AL FRONTEND ⭐⭐⭐
+        
         res.json({
             message: 'Login exitoso',
             token,
@@ -202,7 +202,7 @@ router.put('/users/:id', authenticateToken, [
             updateData.password = await bcrypt.hash(password, 10);
         }
 
-        console.log('📝 Actualizando usuario:', id, updateData);
+        console.log(' Actualizando usuario:', id, updateData);
 
         const updatedUser = await User.findByIdAndUpdate(
             id,
@@ -219,7 +219,7 @@ router.put('/users/:id', authenticateToken, [
             user: updatedUser
         });
     } catch (error) {
-        console.error('❌ Error al actualizar usuario:', error);
+        console.error('Error al actualizar usuario:', error);
         res.status(500).json({
             message: 'Error del servidor',
             error: error.message
@@ -281,7 +281,7 @@ router.put('/change-password', authenticateToken, [
 
 });
 
-// ⭐ ELIMINAR USUARIO (solo admin)
+// ELIMINAR USUARIO (solo admin)
 router.delete('/users/:id', authenticateToken, async (req, res) => {
     try {
         if (req.user.role !== 'admin') {

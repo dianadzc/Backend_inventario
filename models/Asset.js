@@ -16,7 +16,7 @@ const assetSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  type: {  // ⭐ AGREGAR ESTE CAMPO
+  type: {  
     type: String,
     default: ''
   },

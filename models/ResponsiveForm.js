@@ -7,7 +7,7 @@ const responsiveFormSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  asset_id: {  // ⭐ AGREGAR ESTO
+  asset_id: {  
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Asset',
     default: null
