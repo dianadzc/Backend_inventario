@@ -1,4 +1,4 @@
-// server.js - VERSIÓN MONGODB
+﻿// server.js - VERSIÓN MONGODB ACTUALIZADA
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -17,25 +17,28 @@ const clientsRoutes = require('./routes/clients');
 const { generalLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
 // Conectar a MongoDB
 connectDB();
 
-//  CONFIGURACIÓN CORS COMPLETA
+// ⭐ CONFIGURACIÓN CORS COMPLETA PARA RED
 const corsOptions = {
     origin: function (origin, callback) {
         const allowedOrigins = [
             'http://localhost:5173',
-            'http://localhost:5174',
+            'http://localhost:5174', 
             'http://localhost:3000',
-            'http://127.0.0.1:5173'
+            'http://127.0.0.1:5173',
+            'http://192.168.0.49:5173',
+            'http://192.168.0.49:3000'
         ];
         
         // Permitir requests sin origin (como Postman o mismo servidor)
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
+            console.log('CORS bloqueado para origen:', origin);
             callback(new Error('No permitido por CORS'));
         }
     },
@@ -54,7 +57,6 @@ const corsOptions = {
 };
 
 app.use(generalLimiter);
-
 app.use(cors(corsOptions));
 
 // Manejar preflight requests explícitamente
@@ -66,14 +68,14 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware para logging
 app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
-//Servir archivos estáticos (imagen de logo)
+// Servir archivos estáticos (imagen de logo)
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-// Rutas API
+// ==================== RUTAS DE LA APLICACIÓN ====================
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/incidents', incidentsRoutes);
@@ -83,6 +85,15 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/requisitions', requisitionsRoutes);
 app.use('/api/clients', clientsRoutes);
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        message: 'Backend funcionando con MongoDB',
+        timestamp: new Date().toISOString(),
+        database: 'MongoDB'
+    });
+});
 
 // Ruta principal
 app.get('/', (req, res) => {
@@ -97,14 +108,20 @@ app.use((req, res) => {
 // Manejo de errores globales
 app.use((err, req, res, next) => {
     console.error(err.stack);
+    
+    if (err.message === 'No permitido por CORS') {
+        return res.status(403).json({ message: 'Origen no permitido' });
+    }
+    
     res.status(500).json({ message: 'Error interno del servidor' });
 });
 
-app.listen(PORT, () => {
+// Iniciar servidor en todas las interfaces de red
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`Servidor SIAF ejecutándose en http://localhost:${PORT}`);
-    console.log(` ${process.env.APP_NAME}`);
-    console.log(` ${process.env.COMPANY_NAME}`);
-    console.log(` ${process.env.COMPANY_ADDRESS}`);
+    console.log(`✅ Backend corriendo en http://0.0.0.0:${PORT}`);
+    console.log(`📍 Accesible desde: http://192.168.0.49:${PORT}`);
+    console.log(`🗄️  Base de datos: MongoDB`);
+    console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
     console.log(`${'='.repeat(60)}\n`);
 });

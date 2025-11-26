@@ -63,7 +63,7 @@ const initDatabase = async () => {
         console.log('\n Credenciales por defecto:');
         console.log('   Usuario: admin');
         console.log('   Contraseña: admin123');
-        console.log('\n Servidor: http://localhost:5000');
+        console.log('\n Servidor: http://localhost:5001');
         console.log('='.repeat(60) + '\n');
 
     } catch (error) {
